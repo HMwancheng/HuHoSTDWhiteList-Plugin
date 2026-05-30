@@ -1,2 +1,71 @@
 # HuHoSTDWhiteList
-HuHoBot附属插件 - 离线服QQ验证码绑定白名单
+
+HuHoBot 附属插件 — 离线服 QQ 验证码绑定白名单
+
+## 功能
+
+- 玩家首次进服自动踢出并生成随机验证码
+- QQ 群 `@HuHoBot /S验证码 <验证码>` 完成绑定，自动加白名单
+- 再次进服即可正常游玩
+- 支持单 QQ 限制绑定账号数量
+- 支持绑定过期重新验证（可选）
+
+## 前置依赖
+
+- [HuHoBot](https://github.com/HuHoBot/SpigotAdapter) Spigot 版
+- Paper / Spigot 1.21+
+- JDK 21
+
+## 安装
+
+1. 下载 Releases 中的 `HuHoSTDWhiteList.jar`
+2. 放入服务器 `plugins/` 目录
+3. 确保 HuHoBot 已安装并正常运行
+4. 重启服务器
+
+## 配置
+
+`plugins/HuHoSTDWhiteList/config.yml`：
+
+```yaml
+# 单个QQ最多绑定账号数量
+max-accounts-per-qq: 1
+
+# 验证码长度
+code-length: 6
+
+# 验证码有效期（秒）
+code-expiry-seconds: 300
+
+# 踢出提示消息（{code} = 验证码）
+kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /S验证码 {code}"
+
+# 绑定过期重新验证（false=永不过期）
+rebind-enabled: false
+
+# 过期天数（rebind-enabled: true 时生效）
+rebind-days: 30
+
+# 过期踢出提示
+rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /S验证码 {code} 重新绑定"
+```
+
+## 使用流程
+
+1. 玩家进入服务器
+2. 未绑定 → 自动踢出，提示验证码
+3. 玩家在 QQ 群发送 `@HuHoBot /S验证码 <验证码>`
+4. 自动绑定 QQ 并加入白名单
+5. 重新进入服务器，正常游玩
+
+## 编译
+
+```bash
+# 将 HuHoBot-Spigot.jar 放入 libs/ 目录
+gradle build
+# 输出: build/libs/HuHoSTDWhiteList.jar
+```
+
+## 许可证
+
+[MIT](LICENSE)
