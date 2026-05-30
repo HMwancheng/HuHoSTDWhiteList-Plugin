@@ -1,0 +1,23 @@
+# QQWhitelist 配置文件
+
+# 单个QQ最多绑定账号数量
+max-accounts-per-qq: 1
+
+# 验证码长度
+code-length: 6
+
+# 验证码有效期（秒）
+code-expiry-seconds: 300
+
+# 踢出提示消息（{code} = 验证码）
+kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /S验证码 {code}"
+
+# 绑定过期重新验证（false=永不过期）
+rebind-enabled: false
+
+# 过期天数（rebind-enabled: true 时生效）
+rebind-days: 30
+
+# 过期踢出提示
+rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /S验证码 {code} 重新绑定"
+
