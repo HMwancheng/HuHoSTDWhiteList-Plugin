@@ -1,0 +1,21 @@
+name: HuHoSTDWhiteList
+version: 1.0.0
+main: com.stoopad.qqwhitelist.QQWhitelistPlugin
+api-version: '1.21'
+author: stoopad
+description: HuHoBot 附属插件 - QQ验证码绑定白名单
+
+commands:
+  bindcode:
+    description: 输入验证码绑定QQ
+    usage: /bindcode <验证码>
+    permission: qqwhitelist.use
+    permission-message: "§c你没有权限"
+
+permissions:
+  qqwhitelist.*:
+    description: 全部权限
+    default: op
+  qqwhitelist.use:
+    description: 使用验证码
+    default: true
