@@ -39,7 +39,7 @@ public class BindCodeCommand implements CommandExecutor {
         String code = args[0];
         // 注意：这个命令实际上不需要使用，绑定通过QQ群完成
         // 这里只是备用提示
-        player.sendMessage(Component.text("请在QQ群 @机器人 /S验证码 <验证码> 完成绑定", NamedTextColor.YELLOW));
+        player.sendMessage(Component.text("请在QQ群 @机器人 /" + plugin.getBindCommand() + " <验证码> 完成绑定", NamedTextColor.YELLOW));
         return true;
     }
 }
