@@ -12,6 +12,7 @@ public final class QQWhitelistPlugin extends JavaPlugin {
     private static QQWhitelistPlugin instance;
     private CodeManager codeManager;
     private BindManager bindManager;
+    private String bindCommand;
 
     @Override
     public void onEnable() {
@@ -34,6 +35,7 @@ public final class QQWhitelistPlugin extends JavaPlugin {
             return;
         }
 
+        bindCommand = getConfig().getString("bind-command", "验证码");
         codeManager = new CodeManager(this);
         bindManager = new BindManager(this);
 
@@ -56,4 +58,5 @@ public final class QQWhitelistPlugin extends JavaPlugin {
     public static QQWhitelistPlugin getInstance() { return instance; }
     public CodeManager getCodeManager() { return codeManager; }
     public BindManager getBindManager() { return bindManager; }
+    public String getBindCommand() { return bindCommand; }
 }
