@@ -17,10 +17,11 @@ public class JoinListener implements Listener {
 
     public JoinListener(QQWhitelistPlugin plugin) {
         this.plugin = plugin;
+        String cmd = plugin.getBindCommand();
         this.kickMessageTemplate = plugin.getConfig().getString("kick-message",
-                "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /S验证码 {code}");
+                "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /" + cmd + " {code}");
         this.rebindKickMessage = plugin.getConfig().getString("rebind-kick-message",
-                "§c绑定已过期！§e请在QQ群 @HuHoBot /S验证码 {code} 重新绑定");
+                "§c绑定已过期！§e请在QQ群 @HuHoBot /" + cmd + " {code} 重新绑定");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -36,7 +37,7 @@ public class JoinListener implements Listener {
                 offline.setWhitelisted(false);
 
                 String code = plugin.getCodeManager().generateCode(player.getName());
-                String message = rebindKickMessage.replace("{code}", code);
+                String message = rebindKickMessage.replace("{cmd}", plugin.getBindCommand()).replace("{code}", code);
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
                         player.kick(Component.text(message));
@@ -50,7 +51,7 @@ public class JoinListener implements Listener {
 
         // 未绑定 -> 生成验证码并踢出
         String code = plugin.getCodeManager().generateCode(player.getName());
-        String message = kickMessageTemplate.replace("{code}", code);
+        String message = kickMessageTemplate.replace("{cmd}", plugin.getBindCommand()).replace("{code}", code);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 player.kick(Component.text(message));
