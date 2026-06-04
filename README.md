@@ -58,6 +58,10 @@ rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /S验证码 {
 4. 自动绑定 QQ 并加入白名单
 5. 重新进入服务器，正常游玩
 
+## 扩展插件
+
+- **[HuHoSTDAuthMe](https://github.com/kuixuestoopad/HuHoSTDAuthMe)** — AuthMe 联动扩展：QQ 群内强制登陆 & 重置密码
+
 ## 编译
 
 ```bash
