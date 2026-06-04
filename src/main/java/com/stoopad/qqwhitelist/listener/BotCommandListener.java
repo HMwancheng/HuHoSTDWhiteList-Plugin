@@ -24,7 +24,7 @@ public class BotCommandListener implements Listener {
         String command = event.getCommand();
         List<String> params = event.getParam();
 
-        if ("S验证码".equals(command)) {
+        if (plugin.getBindCommand().equals(command)) {
             handleBindCode(event, params);
         }
     }
