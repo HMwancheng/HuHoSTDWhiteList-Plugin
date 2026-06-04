@@ -1,5 +1,8 @@
 # QQWhitelist 配置文件
 
+# QQ群绑定命令名（玩家在QQ群发送的命令）
+bind-command: "验证码"
+
 # 单个QQ最多绑定账号数量
 max-accounts-per-qq: 1
 
@@ -9,8 +12,8 @@ code-length: 6
 # 验证码有效期（秒）
 code-expiry-seconds: 300
 
-# 踢出提示消息（{code} = 验证码）
-kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /S验证码 {code}"
+# 踢出提示消息（{code} = 验证码，{cmd} = 绑定命令名）
+kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /{cmd} {code}"
 
 # 绑定过期重新验证（false=永不过期）
 rebind-enabled: false
@@ -19,5 +22,5 @@ rebind-enabled: false
 rebind-days: 30
 
 # 过期踢出提示
-rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /S验证码 {code} 重新绑定"
+rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /{cmd} {code} 重新绑定"
 
