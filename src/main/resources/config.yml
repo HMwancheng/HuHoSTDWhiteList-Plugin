@@ -24,3 +24,11 @@ rebind-days: 30
 # 过期踢出提示
 rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /{cmd} {code} 重新绑定"
 
+# 回报消息（{player}=用户名, {qq}=QQ号, {max}=绑定上限）
+messages:
+  usage: "用法: /验证码 <验证码>"
+  invalid-code: "验证码无效或已过期"
+  bind-limit: "绑定上限（最多{max}个）"
+  already-bound: "{player} 已绑定"
+  success: "{player} 绑定成功，已加白名单"
+
