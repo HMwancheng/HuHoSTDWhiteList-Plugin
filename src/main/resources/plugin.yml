@@ -1,5 +1,5 @@
 name: HuHoSTDWhiteList
-version: 1.0.0
+version: 1.1.0
 main: com.stoopad.qqwhitelist.QQWhitelistPlugin
 api-version: '1.21'
 author: stoopad
@@ -11,6 +11,11 @@ commands:
     usage: /bindcode <验证码>
     permission: qqwhitelist.use
     permission-message: "§c你没有权限"
+  huhostdwhitelist:
+    description: HuHoSTDWhiteList 管理命令
+    usage: /huhostdwhitelist reload
+    permission: qqwhitelist.admin
+    permission-message: "§c你没有权限"
 
 permissions:
   qqwhitelist.*:
@@ -19,3 +24,6 @@ permissions:
   qqwhitelist.use:
     description: 使用验证码
     default: true
+  qqwhitelist.admin:
+    description: 管理命令（reload等）
+    default: op
