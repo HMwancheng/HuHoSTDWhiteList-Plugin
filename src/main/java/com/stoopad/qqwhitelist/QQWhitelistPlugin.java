@@ -1,7 +1,9 @@
 package com.stoopad.qqwhitelist;
 
 import com.stoopad.qqwhitelist.listener.BotCommandListener;
+import com.stoopad.qqwhitelist.listener.BindCodeCommand;
 import com.stoopad.qqwhitelist.listener.JoinListener;
+import com.stoopad.qqwhitelist.listener.ReloadCommand;
 import com.stoopad.qqwhitelist.manager.BindManager;
 import com.stoopad.qqwhitelist.manager.CodeManager;
 import org.bukkit.plugin.Plugin;
@@ -44,7 +46,8 @@ public final class QQWhitelistPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
 
         // 注册命令
-        getCommand("bindcode").setExecutor(new com.stoopad.qqwhitelist.listener.BindCodeCommand(this));
+        getCommand("bindcode").setExecutor(new BindCodeCommand(this));
+        getCommand("huhostdwhitelist").setExecutor(new ReloadCommand(this));
 
         getLogger().info("HuHoSTDWhiteList 已加载");
     }
@@ -53,6 +56,13 @@ public final class QQWhitelistPlugin extends JavaPlugin {
     public void onDisable() {
         if (codeManager != null) codeManager.shutdown();
         getLogger().info("HuHoSTDWhiteList 已卸载");
+    }
+
+    /**
+     * 获取回报消息
+     */
+    public String getMessage(String key) {
+        return getConfig().getString("messages." + key, key);
     }
 
     public static QQWhitelistPlugin getInstance() { return instance; }
