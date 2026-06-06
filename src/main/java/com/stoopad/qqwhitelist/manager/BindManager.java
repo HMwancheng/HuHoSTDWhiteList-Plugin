@@ -16,9 +16,9 @@ public class BindManager {
     private final QQWhitelistPlugin plugin;
     private final File dataFile;
     private YamlConfiguration data;
-    private final int maxAccountsPerQQ;
-    private final boolean rebindEnabled;
-    private final long rebindMs;
+    private int maxAccountsPerQQ;
+    private boolean rebindEnabled;
+    private long rebindMs;
 
     // 内存缓存: username -> openId
     private final Map<String, String> bindings = new ConcurrentHashMap<>();
@@ -28,10 +28,17 @@ public class BindManager {
     public BindManager(QQWhitelistPlugin plugin) {
         this.plugin = plugin;
         this.dataFile = new File(plugin.getDataFolder(), "data.yml");
+        reloadConfig();
+        loadData();
+    }
+
+    /**
+     * 重载配置
+     */
+    public void reloadConfig() {
         this.maxAccountsPerQQ = plugin.getConfig().getInt("max-accounts-per-qq", 1);
         this.rebindEnabled = plugin.getConfig().getBoolean("rebind-enabled", false);
         this.rebindMs = plugin.getConfig().getLong("rebind-days", 30) * 24L * 60 * 60 * 1000;
-        loadData();
     }
 
     private void loadData() {
@@ -108,6 +115,13 @@ public class BindManager {
             if (oid.equals(openId)) users.add(user);
         });
         return users;
+    }
+
+    /**
+     * 获取单个QQ最大绑定数
+     */
+    public int getMaxAccountsPerQQ() {
+        return maxAccountsPerQQ;
     }
 
     /**
