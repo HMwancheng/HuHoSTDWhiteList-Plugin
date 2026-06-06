@@ -10,8 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CodeManager {
 
     private final QQWhitelistPlugin plugin;
-    private final int codeLength;
-    private final long expiryMs;
+    private int codeLength;
+    private long expiryMs;
     private final SecureRandom random = new SecureRandom();
 
     // code -> CodeEntry
@@ -19,11 +19,18 @@ public class CodeManager {
 
     public CodeManager(QQWhitelistPlugin plugin) {
         this.plugin = plugin;
-        this.codeLength = plugin.getConfig().getInt("code-length", 6);
-        this.expiryMs = plugin.getConfig().getLong("code-expiry-seconds", 300) * 1000L;
+        reloadConfig();
 
         // 定时清理过期验证码（每60秒）
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::cleanup, 20L * 60, 20L * 60);
+    }
+
+    /**
+     * 重载配置
+     */
+    public void reloadConfig() {
+        this.codeLength = plugin.getConfig().getInt("code-length", 6);
+        this.expiryMs = plugin.getConfig().getLong("code-expiry-seconds", 300) * 1000L;
     }
 
     /**
