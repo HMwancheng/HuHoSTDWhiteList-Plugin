@@ -12,21 +12,15 @@ import org.bukkit.event.player.PlayerJoinEvent;
 public class JoinListener implements Listener {
 
     private final QQWhitelistPlugin plugin;
-    private final String kickMessageTemplate;
-    private final String rebindKickMessage;
 
     public JoinListener(QQWhitelistPlugin plugin) {
         this.plugin = plugin;
-        String cmd = plugin.getBindCommand();
-        this.kickMessageTemplate = plugin.getConfig().getString("kick-message",
-                "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /" + cmd + " {code}");
-        this.rebindKickMessage = plugin.getConfig().getString("rebind-kick-message",
-                "§c绑定已过期！§e请在QQ群 @HuHoBot /" + cmd + " {code} 重新绑定");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        String cmd = plugin.getBindCommand();
 
         if (plugin.getBindManager().isBound(player.getName())) {
             // 已绑定，检查是否过期
@@ -37,7 +31,9 @@ public class JoinListener implements Listener {
                 offline.setWhitelisted(false);
 
                 String code = plugin.getCodeManager().generateCode(player.getName());
-                String message = rebindKickMessage.replace("{cmd}", plugin.getBindCommand()).replace("{code}", code);
+                String message = plugin.getConfig().getString("rebind-kick-message",
+                        "§c绑定已过期！§e请在QQ群 @HuHoBot /" + cmd + " {code} 重新绑定")
+                        .replace("{cmd}", cmd).replace("{code}", code);
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (player.isOnline()) {
                         player.kick(Component.text(message));
@@ -51,7 +47,9 @@ public class JoinListener implements Listener {
 
         // 未绑定 -> 生成验证码并踢出
         String code = plugin.getCodeManager().generateCode(player.getName());
-        String message = kickMessageTemplate.replace("{cmd}", plugin.getBindCommand()).replace("{code}", code);
+        String message = plugin.getConfig().getString("kick-message",
+                "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /" + cmd + " {code}")
+                .replace("{cmd}", cmd).replace("{code}", code);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 player.kick(Component.text(message));
