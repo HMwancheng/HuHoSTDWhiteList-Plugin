@@ -15,7 +15,7 @@ bypass-names:
 # 权限绕过开关
 bypass-permission-enabled: false
 # 拥有此权限的玩家直接放行
-bypass-permission: "qqwhitelist.bypass"
+bypass-permission: "huhostdwhitelist.bypass"
 
 # 单个QQ最多绑定账号数量
 max-accounts-per-qq: 1

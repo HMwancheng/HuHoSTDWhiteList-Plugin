@@ -10,8 +10,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 
 public final class QQWhitelistPlugin extends JavaPlugin {
 
@@ -68,21 +70,27 @@ public final class QQWhitelistPlugin extends JavaPlugin {
      */
     private void updateConfig() {
         try {
-            reloadConfig();
-            Reader reader = new InputStreamReader(getResource("config.yml"), java.nio.charset.StandardCharsets.UTF_8);
+            // 读取 jar 内默认配置
+            Reader reader = new InputStreamReader(getResource("config.yml"), StandardCharsets.UTF_8);
             YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(reader);
             reader.close();
 
+            // 直接读取磁盘文件，避免 reloadConfig 的 defaults 干扰 contains 判断
+            File configFile = new File(getDataFolder(), "config.yml");
+            YamlConfiguration diskConfig = YamlConfiguration.loadConfiguration(configFile);
+
             boolean updated = false;
             for (String key : defaultConfig.getKeys(true)) {
-                if (!getConfig().contains(key)) {
-                    getConfig().set(key, defaultConfig.get(key));
+                if (!diskConfig.contains(key)) {
+                    diskConfig.set(key, defaultConfig.get(key));
                     updated = true;
+                    getLogger().info("新增配置项: " + key);
                 }
             }
             if (updated) {
-                saveConfig();
-                getLogger().info("配置文件已自动更新，新增了配置项");
+                diskConfig.save(configFile);
+                reloadConfig();
+                getLogger().info("配置文件已自动更新");
             }
         } catch (Exception e) {
             getLogger().warning("配置更新检查失败: " + e.getMessage());

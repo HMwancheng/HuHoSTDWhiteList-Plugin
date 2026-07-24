@@ -81,7 +81,7 @@ public class JoinListener implements Listener {
 
         // 权限绕过
         if (plugin.getConfig().getBoolean("bypass-permission-enabled", false)) {
-            String perm = plugin.getConfig().getString("bypass-permission", "qqwhitelist.bypass");
+            String perm = plugin.getConfig().getString("bypass-permission", "huhostdwhitelist.bypass");
             if (player.hasPermission(perm)) {
                 return true;
             }
