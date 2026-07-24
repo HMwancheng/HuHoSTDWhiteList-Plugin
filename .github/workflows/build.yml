@@ -20,6 +20,19 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Resolve dependencies
+        run: gradle dependencies --no-daemon -q
+
+      - name: Build HuHoBot stub
+        run: |
+          PAPER_API=$(find ~/.gradle -path "*/paper-api-*.jar" ! -name "*-sources*" ! -name "*-javadoc*" | head -1)
+          echo "Paper API: $PAPER_API"
+          curl -sL -o fastjson2.jar https://repo1.maven.org/maven2/com/alibaba/fastjson2/fastjson2/2.0.53/fastjson2-2.0.53.jar
+          mkdir -p libs stub_out
+          javac -cp "$PAPER_API:fastjson2.jar" stub/cn/huohuas001/huhobot/spigot/api/BotCustomCommand.java -d stub_out
+          cd stub_out
+          jar cf ../libs/HuHoBot-Spigot.jar cn/
+
       - name: Build
         run: gradle jar
 
