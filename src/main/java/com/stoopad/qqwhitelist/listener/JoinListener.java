@@ -9,6 +9,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.List;
+import java.util.regex.Pattern;
+
 public class JoinListener implements Listener {
 
     private final QQWhitelistPlugin plugin;
@@ -20,6 +23,13 @@ public class JoinListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+
+        // === 白名单绕过 ===
+        if (isBypassed(player)) {
+            plugin.getLogger().info(player.getName() + " 已绕过验证（白名单/权限）");
+            return;
+        }
+
         String cmd = plugin.getBindCommand();
 
         if (plugin.getBindManager().isBound(player.getName())) {
@@ -55,5 +65,43 @@ public class JoinListener implements Listener {
                 player.kick(Component.text(message));
             }
         }, 5L);
+    }
+
+    private boolean isBypassed(Player player) {
+        // 名单绕过
+        if (plugin.getConfig().getBoolean("bypass-names-enabled", false)) {
+            List<String> bypassNames = plugin.getConfig().getStringList("bypass-names");
+            String name = player.getName();
+            for (String pattern : bypassNames) {
+                if (globMatch(name, pattern)) {
+                    return true;
+                }
+            }
+        }
+
+        // 权限绕过
+        if (plugin.getConfig().getBoolean("bypass-permission-enabled", false)) {
+            String perm = plugin.getConfig().getString("bypass-permission", "qqwhitelist.bypass");
+            if (player.hasPermission(perm)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean globMatch(String text, String pattern) {
+        StringBuilder regex = new StringBuilder();
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '*') {
+                regex.append(".*");
+            } else if (c == '?') {
+                regex.append(".");
+            } else {
+                regex.append(Pattern.quote(String.valueOf(c)));
+            }
+        }
+        return Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE).matcher(text).matches();
     }
 }

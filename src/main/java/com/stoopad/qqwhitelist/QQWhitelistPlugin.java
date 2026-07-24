@@ -6,8 +6,12 @@ import com.stoopad.qqwhitelist.listener.JoinListener;
 import com.stoopad.qqwhitelist.listener.ReloadCommand;
 import com.stoopad.qqwhitelist.manager.BindManager;
 import com.stoopad.qqwhitelist.manager.CodeManager;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.InputStreamReader;
+import java.io.Reader;
 
 public final class QQWhitelistPlugin extends JavaPlugin {
 
@@ -20,6 +24,7 @@ public final class QQWhitelistPlugin extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        updateConfig();
 
         // 检查 HuHoBot
         Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
@@ -56,6 +61,32 @@ public final class QQWhitelistPlugin extends JavaPlugin {
     public void onDisable() {
         if (codeManager != null) codeManager.shutdown();
         getLogger().info("HuHoSTDWhiteList 已卸载");
+    }
+
+    /**
+     * 自动更新已有配置文件，合并新增的配置项
+     */
+    private void updateConfig() {
+        try {
+            reloadConfig();
+            Reader reader = new InputStreamReader(getResource("config.yml"), java.nio.charset.StandardCharsets.UTF_8);
+            YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(reader);
+            reader.close();
+
+            boolean updated = false;
+            for (String key : defaultConfig.getKeys(true)) {
+                if (!getConfig().contains(key)) {
+                    getConfig().set(key, defaultConfig.get(key));
+                    updated = true;
+                }
+            }
+            if (updated) {
+                saveConfig();
+                getLogger().info("配置文件已自动更新，新增了配置项");
+            }
+        } catch (Exception e) {
+            getLogger().warning("配置更新检查失败: " + e.getMessage());
+        }
     }
 
     /**

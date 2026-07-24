@@ -3,6 +3,20 @@
 # QQ群绑定命令名（玩家在QQ群发送的命令）
 bind-command: "验证码"
 
+# === 白名单绕过 ===
+# 名单绕过开关（支持通配符 * 和 ?）
+bypass-names-enabled: false
+# 白名单玩家名，匹配的玩家直接放行，无需QQ验证
+# * 匹配任意多个字符，? 匹配单个字符
+bypass-names:
+  - "Bot_*"
+  - "NPC_*"
+
+# 权限绕过开关
+bypass-permission-enabled: false
+# 拥有此权限的玩家直接放行
+bypass-permission: "qqwhitelist.bypass"
+
 # 单个QQ最多绑定账号数量
 max-accounts-per-qq: 1
 
