@@ -1,15 +1,17 @@
 package cn.huohuas001.huhobot.spigot.api;
 
 import com.alibaba.fastjson2.JSONObject;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
 import java.util.Collections;
 import java.util.List;
 
-public class BotCustomCommand extends Event {
+public class BotCustomCommand extends Event implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
+    private boolean cancelled = false;
 
     public String getCommand() {
         return "";
@@ -24,6 +26,16 @@ public class BotCustomCommand extends Event {
     }
 
     public void respone(String message, String type) {
+    }
+
+    @Override
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    @Override
+    public void setCancelled(boolean cancelled) {
+        this.cancelled = cancelled;
     }
 
     @Override
