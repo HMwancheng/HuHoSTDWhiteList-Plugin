@@ -179,5 +179,6 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
     public static QQWhitelistPlugin getInstance() { return instance; }
     public CodeManager getCodeManager() { return codeManager; }
     public BindManager getBindManager() { return bindManager; }
+    public JoinListener getJoinListener() { return joinListener; }
     public String getBindCommand() { return bindCommand; }
 }
