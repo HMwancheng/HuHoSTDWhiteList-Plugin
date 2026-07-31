@@ -6,20 +6,26 @@ import com.stoopad.qqwhitelist.listener.JoinListener;
 import com.stoopad.qqwhitelist.listener.ReloadCommand;
 import com.stoopad.qqwhitelist.manager.BindManager;
 import com.stoopad.qqwhitelist.manager.CodeManager;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
-public final class QQWhitelistPlugin extends JavaPlugin {
+public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessageListener {
+
+    private static final String CHANNEL = "huhostdwhitelist:main";
 
     private static QQWhitelistPlugin instance;
     private CodeManager codeManager;
     private BindManager bindManager;
+    private JoinListener joinListener;
     private String bindCommand;
 
     @Override
@@ -49,33 +55,92 @@ public final class QQWhitelistPlugin extends JavaPlugin {
         bindManager = new BindManager(this);
 
         // 注册事件
-        getServer().getPluginManager().registerEvents(new JoinListener(this), this);
+        joinListener = new JoinListener(this);
+        getServer().getPluginManager().registerEvents(joinListener, this);
         getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
 
         // 注册命令
         getCommand("bindcode").setExecutor(new BindCodeCommand(this));
         getCommand("huhostdwhitelist").setExecutor(new ReloadCommand(this));
 
-        getLogger().info("HuHoSTDWhiteList 已加载");
+        // 注册 Plugin Message 通道（与 Velocity 配套插件通信）
+        getServer().getMessenger().registerOutgoingPluginChannel(this, CHANNEL);
+        getServer().getMessenger().registerIncomingPluginChannel(this, CHANNEL, this);
+
+        getLogger().info("HuHoSTDWhiteList 已加载  mode=" + getConfig().getString("verify-mode", "countdown"));
     }
 
     @Override
     public void onDisable() {
         if (codeManager != null) codeManager.shutdown();
+        getServer().getMessenger().unregisterIncomingPluginChannel(this, CHANNEL);
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this, CHANNEL);
         getLogger().info("HuHoSTDWhiteList 已卸载");
     }
+
+    // ==================== Plugin Message ====================
+
+    @Override
+    public void onPluginMessageReceived(String channel, Player player, byte[] message) {
+        if (!CHANNEL.equals(channel)) return;
+
+        String msg = new String(message, StandardCharsets.UTF_8);
+        String[] parts = msg.split("\\|", 3);
+        if (parts.length < 3) return;
+
+        String action = parts[0];
+        String playerName = parts[1];
+        String openId = parts[2];
+
+        if ("BIND".equals(action)) {
+            handleVelocityBind(playerName, openId);
+        }
+    }
+
+    private void handleVelocityBind(String playerName, String openId) {
+        // 检查绑定上限
+        if (!bindManager.canBind(openId)) {
+            getLogger().warning("Velocity 绑定失败: " + openId + " 已达上限");
+            return;
+        }
+
+        // 验证码已由 Velocity 端校验，这里直接执行绑定
+        if (bindManager.isBound(playerName)) {
+            getLogger().info("Velocity 绑定: " + playerName + " 已绑定，跳过");
+            return;
+        }
+
+        boolean success = bindManager.bind(playerName, openId);
+        if (!success) {
+            getLogger().warning("Velocity 绑定失败: " + playerName + " -> " + openId);
+            return;
+        }
+
+        // 加白名单
+        getServer().getScheduler().runTask(this, () -> {
+            org.bukkit.OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
+            offline.setWhitelisted(true);
+            getLogger().info("Velocity 绑定: " + playerName + " <-> " + openId + " 已加白名单");
+        });
+
+        // 如果玩家在线且处于倒计时中，取消倒计时放行
+        Player target = Bukkit.getPlayer(playerName);
+        if (target != null && target.isOnline() && joinListener.isInCountdown(target.getUniqueId())) {
+            getServer().getScheduler().runTask(this, () -> joinListener.cancelCountdown(target));
+        }
+    }
+
+    // ==================== 配置更新 ====================
 
     /**
      * 自动更新已有配置文件，合并新增的配置项
      */
     private void updateConfig() {
         try {
-            // 读取 jar 内默认配置
             Reader reader = new InputStreamReader(getResource("config.yml"), StandardCharsets.UTF_8);
             YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(reader);
             reader.close();
 
-            // 直接读取磁盘文件，避免 reloadConfig 的 defaults 干扰 contains 判断
             File configFile = new File(getDataFolder(), "config.yml");
             YamlConfiguration diskConfig = YamlConfiguration.loadConfiguration(configFile);
 

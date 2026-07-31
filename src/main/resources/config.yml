@@ -3,6 +3,23 @@
 # QQ群绑定命令名（玩家在QQ群发送的命令）
 bind-command: "验证码"
 
+# === 验证模式 ===
+# "countdown" = 玩家进服后倒计时，期间可绑定，超时踢出
+# "prelogin"   = 玩家在连接界面直接被拒绝（看不到游戏画面）
+verify-mode: "countdown"
+
+# 倒计时秒数（verify-mode: countdown 时生效）
+countdown-seconds: 15
+
+# 倒计时期间冻结玩家（无法移动）
+countdown-freeze: true
+
+# 倒计时 BossBar 提示（{time}=剩余秒数, {code}=验证码, {cmd}=绑定命令）
+countdown-bar: "§e请在QQ群 @HuHoBot /{cmd} {code}  §c{time}秒后踢出"
+
+# pre-login 模式踢出提示（{code}=验证码, {cmd}=绑定命令）
+prelogin-kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /{cmd} {code}"
+
 # === 白名单绕过 ===
 # 名单绕过开关（支持通配符 * 和 ?）
 bypass-names-enabled: false
@@ -12,7 +29,7 @@ bypass-names:
   - "Bot_*"
   - "NPC_*"
 
-# 权限绕过开关
+# 权限绕过开关（仅 countdown 模式生效，prelogin 模式不支持权限检查）
 bypass-permission-enabled: false
 # 拥有此权限的玩家直接放行
 bypass-permission: "huhostdwhitelist.bypass"
@@ -26,7 +43,8 @@ code-length: 6
 # 验证码有效期（秒）
 code-expiry-seconds: 300
 
-# 踢出提示消息（{code} = 验证码，{cmd} = 绑定命令名）
+# 踢出提示消息（倒计时结束 / prelogin 模式使用）
+# {code} = 验证码，{cmd} = 绑定命令名
 kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /{cmd} {code}"
 
 # 绑定过期重新验证（false=永不过期）
@@ -50,4 +68,3 @@ messages:
   already-bound: "{player} 已绑定"
   # 绑定成功
   success: "{player} 绑定成功，已加白名单"
-
