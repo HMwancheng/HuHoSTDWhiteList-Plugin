@@ -34,30 +34,37 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         saveDefaultConfig();
         updateConfig();
 
-        // 检查 HuHoBot
-        Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
-        if (huhoBot == null) {
-            getLogger().severe("HuHoBot 未安装！禁用 HuHoSTDWhiteList");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
-        try {
-            Class.forName("cn.huohuas001.huhobot.spigot.api.BotCustomCommand");
-        } catch (ClassNotFoundException e) {
-            getLogger().severe("HuHoBot API 加载失败: " + e.getMessage());
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-
         bindCommand = getConfig().getString("bind-command", "验证码");
         codeManager = new CodeManager(this);
         bindManager = new BindManager(this);
 
+        // 检查是否需要本地 HuHoBot
+        boolean requireHuHoBot = getConfig().getBoolean("require-huhobot", true);
+        if (requireHuHoBot) {
+            Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
+            if (huhoBot == null) {
+                getLogger().severe("HuHoBot 未安装！禁用 HuHoSTDWhiteList");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+
+            try {
+                Class.forName("cn.huohuas001.huhobot.spigot.api.BotCustomCommand");
+            } catch (ClassNotFoundException e) {
+                getLogger().severe("HuHoBot API 加载失败: " + e.getMessage());
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+
+            // 注册 HuHoBot 本地命令监听
+            getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
+        } else {
+            getLogger().info("HuHoBot 本地检测已跳过，仅通过 Velocity 插件消息通道接收绑定");
+        }
+
         // 注册事件
         joinListener = new JoinListener(this);
         getServer().getPluginManager().registerEvents(joinListener, this);
-        getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
 
         // 注册命令
         getCommand("bindcode").setExecutor(new BindCodeCommand(this));

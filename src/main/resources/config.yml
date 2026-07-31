@@ -3,6 +3,9 @@
 # QQ群绑定命令名（玩家在QQ群发送的命令）
 bind-command: "验证码"
 
+# 是否要求本地安装 HuHoBot（false=仅通过 Velocity 插件消息通道接收绑定）
+require-huhobot: false
+
 # === 验证模式 ===
 # "countdown" = 玩家进服后倒计时，期间可绑定，超时踢出
 # "prelogin"   = 玩家在连接界面直接被拒绝（看不到游戏画面）
