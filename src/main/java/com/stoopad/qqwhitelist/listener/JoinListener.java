@@ -129,7 +129,7 @@ public class JoinListener implements Listener {
                 .replace("{time}", String.valueOf(totalSeconds));
         BossBar bar = BossBar.bossBar(Component.text(title), 1.0f,
                 BossBar.Color.RED, BossBar.Overlay.PROGRESS);
-        bar.addPlayer(player);
+        player.showBossBar(bar);
         activeBossBars.put(player.getUniqueId(), bar);
 
         if (freeze) {
@@ -166,7 +166,7 @@ public class JoinListener implements Listener {
                     return;
                 }
 
-                bar.title(Component.text(barTemplate.replace("{cmd}", cmd)
+                bar.name(Component.text(barTemplate.replace("{cmd}", cmd)
                         .replace("{code}", code).replace("{time}", String.valueOf(remaining))));
                 bar.progress((float) remaining / totalSeconds);
                 remaining--;
@@ -179,7 +179,7 @@ public class JoinListener implements Listener {
     private void cleanup(Player player) {
         UUID uuid = player.getUniqueId();
         BossBar bar = activeBossBars.remove(uuid);
-        if (bar != null) bar.removeAll();
+        if (bar != null) player.hideBossBar(bar);
         countdownTasks.remove(uuid);
 
         // 恢复移动速度
@@ -214,7 +214,7 @@ public class JoinListener implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         BossBar bar = activeBossBars.remove(player.getUniqueId());
-        if (bar != null) bar.removeAll();
+        if (bar != null) player.hideBossBar(bar);
         BukkitRunnable task = countdownTasks.remove(player.getUniqueId());
         if (task != null) task.cancel();
     }
