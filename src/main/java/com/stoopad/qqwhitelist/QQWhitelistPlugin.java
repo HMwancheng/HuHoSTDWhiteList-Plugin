@@ -89,22 +89,28 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         if (parts.length < 3) return;
 
         String action = parts[0];
-        String playerName = parts[1];
+        String code = parts[1];
         String openId = parts[2];
 
         if ("BIND".equals(action)) {
-            handleVelocityBind(playerName, openId);
+            handleVelocityBind(code, openId);
         }
     }
 
-    private void handleVelocityBind(String playerName, String openId) {
+    private void handleVelocityBind(String code, String openId) {
+        // 通过验证码获取玩家名
+        String playerName = codeManager.consumeCode(code);
+        if (playerName == null) {
+            getLogger().warning("Velocity 绑定: 验证码无效或已过期 " + code);
+            return;
+        }
+
         // 检查绑定上限
         if (!bindManager.canBind(openId)) {
             getLogger().warning("Velocity 绑定失败: " + openId + " 已达上限");
             return;
         }
 
-        // 验证码已由 Velocity 端校验，这里直接执行绑定
         if (bindManager.isBound(playerName)) {
             getLogger().info("Velocity 绑定: " + playerName + " 已绑定，跳过");
             return;
@@ -117,10 +123,11 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         }
 
         // 加白名单
+        String finalName = playerName;
         getServer().getScheduler().runTask(this, () -> {
-            org.bukkit.OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
+            org.bukkit.OfflinePlayer offline = Bukkit.getOfflinePlayer(finalName);
             offline.setWhitelisted(true);
-            getLogger().info("Velocity 绑定: " + playerName + " <-> " + openId + " 已加白名单");
+            getLogger().info("Velocity 绑定: " + finalName + " <-> " + openId + " 已加白名单");
         });
 
         // 如果玩家在线且处于倒计时中，取消倒计时放行
