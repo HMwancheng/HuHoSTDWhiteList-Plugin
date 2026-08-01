@@ -158,4 +158,25 @@ public class BindManager {
         data.set("bindings." + key, null);
         saveData();
     }
+
+    /**
+     * 删除玩家绑定（含白名单移除）
+     * @return 被删除的 openId，如果不存在返回 null
+     */
+    public String delete(String username) {
+        String key = username.toLowerCase();
+        String openId = bindings.remove(key);
+        if (openId == null) return null;
+        bindTimes.remove(key);
+        data.set("bindings." + key, null);
+        saveData();
+        return openId;
+    }
+
+    /**
+     * 获取所有绑定数据
+     */
+    public Map<String, String> getAllBindings() {
+        return new ConcurrentHashMap<>(bindings);
+    }
 }

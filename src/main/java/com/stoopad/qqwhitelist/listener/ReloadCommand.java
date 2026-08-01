@@ -23,27 +23,120 @@ public class ReloadCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd,
                              @NotNull String label, @NotNull String[] args) {
         if (args.length < 1) {
-            sender.sendMessage(Component.text("用法: /huhostdwhitelist reload", NamedTextColor.YELLOW));
+            sendUsage(sender);
             return true;
         }
 
-        // Velocity 端发来的绑定请求
-        if ("velocitybind".equalsIgnoreCase(args[0])) {
-            return handleVelocityBind(sender, args);
+        switch (args[0].toLowerCase()) {
+            case "reload":
+                return handleReload(sender);
+            case "delete":
+                return handleDelete(sender, args);
+            case "whitelist":
+                return handleWhitelist(sender, args);
+            case "velocitybind":
+                return handleVelocityBind(sender, args);
+            default:
+                sendUsage(sender);
+                return true;
         }
+    }
 
-        if ("reload".equalsIgnoreCase(args[0])) {
-            return handleReload(sender);
+    private void sendUsage(CommandSender sender) {
+        sender.sendMessage(Component.text("=== HuHoSTDWhiteList ===", NamedTextColor.GOLD));
+        sender.sendMessage(Component.text("/huhostdwhitelist reload", NamedTextColor.YELLOW)
+                .append(Component.text(" - 重载配置", NamedTextColor.GRAY)));
+        sender.sendMessage(Component.text("/huhostdwhitelist delete <玩家名>", NamedTextColor.YELLOW)
+                .append(Component.text(" - 删除玩家绑定", NamedTextColor.GRAY)));
+        sender.sendMessage(Component.text("/huhostdwhitelist whitelist add <玩家名>", NamedTextColor.YELLOW)
+                .append(Component.text(" - 手动添加白名单(无QQ)", NamedTextColor.GRAY)));
+    }
+
+    private boolean checkPermission(CommandSender sender) {
+        if (!sender.hasPermission("qqwhitelist.admin")) {
+            sender.sendMessage(Component.text("你没有权限执行此命令", NamedTextColor.RED));
+            return false;
         }
-
-        sender.sendMessage(Component.text("用法: /huhostdwhitelist reload", NamedTextColor.YELLOW));
         return true;
     }
 
-    /**
-     * 处理 Velocity 端发来的绑定请求
-     * 格式: /huhostdwhitelist velocitybind <code> <openId>
-     */
+    // ==================== reload ====================
+
+    private boolean handleReload(CommandSender sender) {
+        if (!checkPermission(sender)) return true;
+
+        plugin.reloadConfig();
+        plugin.getCodeManager().reloadConfig();
+        plugin.getBindManager().reloadConfig();
+
+        sender.sendMessage(Component.text("[HuHoSTDWhiteList] 配置已重载", NamedTextColor.GREEN));
+        return true;
+    }
+
+    // ==================== delete ====================
+
+    private boolean handleDelete(CommandSender sender, String[] args) {
+        if (!checkPermission(sender)) return true;
+
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("用法: /huhostdwhitelist delete <玩家名>", NamedTextColor.YELLOW));
+            return true;
+        }
+
+        String playerName = args[1];
+        String openId = plugin.getBindManager().delete(playerName);
+
+        if (openId == null) {
+            sender.sendMessage(Component.text(playerName + " 没有绑定记录", NamedTextColor.RED));
+            return true;
+        }
+
+        // 移除白名单
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
+        if (offline != null) {
+            offline.setWhitelisted(false);
+        }
+
+        sender.sendMessage(Component.text(playerName + " 绑定已删除 (QQ: " + openId + ")，白名单已移除", NamedTextColor.GREEN));
+        plugin.getLogger().info(sender.getName() + " 删除了 " + playerName + " 的绑定");
+        return true;
+    }
+
+    // ==================== whitelist ====================
+
+    private boolean handleWhitelist(CommandSender sender, String[] args) {
+        if (!checkPermission(sender)) return true;
+
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("用法: /huhostdwhitelist whitelist add <玩家名>", NamedTextColor.YELLOW));
+            return true;
+        }
+
+        if (!"add".equalsIgnoreCase(args[1])) {
+            sender.sendMessage(Component.text("用法: /huhostdwhitelist whitelist add <玩家名>", NamedTextColor.YELLOW));
+            return true;
+        }
+
+        if (args.length < 3) {
+            sender.sendMessage(Component.text("请指定玩家名", NamedTextColor.RED));
+            return true;
+        }
+
+        String playerName = args[2];
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
+        if (offline == null) {
+            sender.sendMessage(Component.text("玩家 " + playerName + " 不存在", NamedTextColor.RED));
+            return true;
+        }
+
+        offline.setWhitelisted(true);
+        sender.sendMessage(Component.text(playerName + " 已手动添加白名单（无QQ绑定）", NamedTextColor.GREEN));
+        plugin.getLogger().info(sender.getName() + " 手动为 " + playerName + " 添加了白名单");
+        return true;
+    }
+
+    // ==================== velocitybind (内部) ====================
+
     private boolean handleVelocityBind(CommandSender sender, String[] args) {
         if (args.length < 3) {
             plugin.getLogger().warning("Velocity bind: 参数不足，需要 code 和 openId");
@@ -88,20 +181,6 @@ public class ReloadCommand implements CommandExecutor {
             Bukkit.getScheduler().runTask(plugin, () -> plugin.getJoinListener().cancelCountdown(target));
         }
 
-        return true;
-    }
-
-    private boolean handleReload(CommandSender sender) {
-        if (!sender.hasPermission("qqwhitelist.admin")) {
-            sender.sendMessage(Component.text("你没有权限执行此命令", NamedTextColor.RED));
-            return true;
-        }
-
-        plugin.reloadConfig();
-        plugin.getCodeManager().reloadConfig();
-        plugin.getBindManager().reloadConfig();
-
-        sender.sendMessage(Component.text("[HuHoSTDWhiteList] 配置已重载", NamedTextColor.GREEN));
         return true;
     }
 }
