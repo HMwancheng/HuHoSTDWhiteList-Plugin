@@ -109,23 +109,27 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         String playerName = codeManager.consumeCode(code);
         if (playerName == null) {
             getLogger().warning("Velocity 绑定: 验证码无效或已过期 " + code);
+            sendBindResult(code, "fail", "验证码无效");
             return;
         }
 
         // 检查绑定上限
         if (!bindManager.canBind(openId)) {
             getLogger().warning("Velocity 绑定失败: " + openId + " 已达上限");
+            sendBindResult(code, "fail", "绑定上限");
             return;
         }
 
         if (bindManager.isBound(playerName)) {
             getLogger().info("Velocity 绑定: " + playerName + " 已绑定，跳过");
+            sendBindResult(code, "success", playerName);
             return;
         }
 
         boolean success = bindManager.bind(playerName, openId);
         if (!success) {
             getLogger().warning("Velocity 绑定失败: " + playerName + " -> " + openId);
+            sendBindResult(code, "fail", "绑定失败");
             return;
         }
 
@@ -137,10 +141,33 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
             getLogger().info("Velocity 绑定: " + finalName + " <-> " + openId + " 已加白名单");
         });
 
+        // 回报 HuHoBot-Velocity → QQ群消息
+        sendBindResult(code, "success", playerName);
+
         // 如果玩家在线且处于倒计时中，取消倒计时放行
         Player target = Bukkit.getPlayer(playerName);
         if (target != null && target.isOnline() && joinListener.isInCountdown(target.getUniqueId())) {
             getServer().getScheduler().runTask(this, () -> joinListener.cancelCountdown(target));
+        }
+    }
+
+    /**
+     * 向 Velocity 发送绑定结果回报
+     * 格式: BIND_RESULT|success|playerName|code 或 BIND_RESULT|fail|reason|code
+     */
+    private void sendBindResult(String code, String status, String info) {
+        String msg = "BIND_RESULT|" + status + "|" + info + "|" + code;
+        byte[] data = msg.getBytes(StandardCharsets.UTF_8);
+        // 通过任意在线玩家发送插件消息回 Velocity
+        Player anyPlayer = null;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            anyPlayer = p;
+            break;
+        }
+        if (anyPlayer != null) {
+            anyPlayer.sendPluginMessage(this, CHANNEL, data);
+        } else {
+            getLogger().warning("无在线玩家，无法回报绑定结果到 Velocity");
         }
     }
 

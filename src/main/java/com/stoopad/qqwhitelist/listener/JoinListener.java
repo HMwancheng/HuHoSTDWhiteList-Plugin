@@ -160,9 +160,10 @@ public class JoinListener implements Listener {
                     String message = plugin.getConfig().getString("kick-message",
                             "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /" + cmd + " {code}")
                             .replace("{cmd}", cmd).replace("{code}", code);
-                    player.kick(Component.text(message));
-                    cleanup(player);
+                    // 先取消任务，清理由 PlayerQuitEvent 处理
+                    countdownTasks.remove(player.getUniqueId());
                     cancel();
+                    player.kick(Component.text(message));
                     return;
                 }
 
@@ -198,6 +199,7 @@ public class JoinListener implements Listener {
             task.cancel();
         }
         cleanup(player);
+        player.sendMessage(Component.text("§a绑定成功！欢迎进入服务器", NamedTextColor.GREEN));
         plugin.getLogger().info(player.getName() + " 倒计时已取消（Velocity 绑定）");
     }
 
