@@ -17,6 +17,8 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessageListener {
 
@@ -27,6 +29,7 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
     private BindManager bindManager;
     private JoinListener joinListener;
     private String bindCommand;
+    private final Queue<String> pendingBindResults = new ConcurrentLinkedQueue<>();
 
     @Override
     public void onEnable() {
@@ -170,9 +173,25 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
             break;
         }
         if (anyPlayer != null) {
+            // 先发送积压的消息
+            flushBindResults(anyPlayer);
             anyPlayer.sendPluginMessage(this, CHANNEL, data);
         } else {
-            getLogger().warning("无在线玩家，无法回报绑定结果到 Velocity");
+            // 无人在线，缓存消息等待玩家加入时补发
+            pendingBindResults.add(msg);
+            getLogger().info("无在线玩家，BIND_RESULT 已缓存待玩家加入时补发");
+        }
+    }
+
+    /**
+     * 补发缓存中的绑定结果（玩家加入时调用）
+     */
+    public void flushBindResults(Player player) {
+        String msg;
+        while ((msg = pendingBindResults.poll()) != null) {
+            byte[] data = msg.getBytes(StandardCharsets.UTF_8);
+            player.sendPluginMessage(this, CHANNEL, data);
+            getLogger().info("补发缓存 BIND_RESULT: " + msg);
         }
     }
 
