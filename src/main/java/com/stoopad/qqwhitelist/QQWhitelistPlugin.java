@@ -17,8 +17,6 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessageListener {
 
@@ -29,7 +27,6 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
     private BindManager bindManager;
     private JoinListener joinListener;
     private String bindCommand;
-    private final Queue<String> pendingBindResults = new ConcurrentLinkedQueue<>();
 
     @Override
     public void onEnable() {
@@ -103,16 +100,16 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         String openId = parts[2];
 
         if ("BIND".equals(action)) {
-            handleVelocityBind(code, openId);
+            handleVelocityBind(code, openId, player);
         }
     }
 
-    private void handleVelocityBind(String code, String openId) {
+    private void handleVelocityBind(String code, String openId, Player relay) {
         // 通过验证码获取玩家名
         String playerName = codeManager.consumeCode(code);
         if (playerName == null) {
             getLogger().warning("Velocity 绑定: 验证码无效或已过期 " + code);
-            sendBindResult(code, "error", getMessage("invalid-code"));
+            sendBindResult(code, "error", getMessage("invalid-code"), relay);
             return;
         }
 
@@ -120,14 +117,14 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         if (!bindManager.canBind(openId)) {
             getLogger().warning("Velocity 绑定失败: " + openId + " 已达上限");
             sendBindResult(code, "error", getMessage("bind-limit")
-                    .replace("{max}", String.valueOf(bindManager.getMaxAccountsPerQQ())));
+                    .replace("{max}", String.valueOf(bindManager.getMaxAccountsPerQQ())), relay);
             return;
         }
 
         if (bindManager.isBound(playerName)) {
             getLogger().info("Velocity 绑定: " + playerName + " 已绑定，跳过");
             sendBindResult(code, "success", getMessage("already-bound")
-                    .replace("{player}", playerName));
+                    .replace("{player}", playerName), relay);
             return;
         }
 
@@ -135,7 +132,7 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         if (!success) {
             getLogger().warning("Velocity 绑定失败: " + playerName + " -> " + openId);
             sendBindResult(code, "error", getMessage("already-bound")
-                    .replace("{player}", playerName));
+                    .replace("{player}", playerName), relay);
             return;
         }
 
@@ -149,7 +146,7 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
 
         // 回报 HuHoBot-Velocity → QQ群消息
         sendBindResult(code, "success", getMessage("success")
-                .replace("{player}", playerName));
+                .replace("{player}", playerName), relay);
 
         // 如果玩家在线且处于倒计时中，取消倒计时放行
         Player target = Bukkit.getPlayer(playerName);
@@ -163,35 +160,23 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
      * 格式: BIND_RESULT|status|resolved_message|code
      * status: success / error
      */
-    private void sendBindResult(String code, String status, String message) {
+    private void sendBindResult(String code, String status, String message, Player relay) {
         String msg = "BIND_RESULT|" + status + "|" + message + "|" + code;
         byte[] data = msg.getBytes(StandardCharsets.UTF_8);
-        // 通过任意在线玩家发送插件消息回 Velocity
-        Player anyPlayer = null;
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            anyPlayer = p;
-            break;
-        }
-        if (anyPlayer != null) {
-            // 先发送积压的消息
-            flushBindResults(anyPlayer);
-            anyPlayer.sendPluginMessage(this, CHANNEL, data);
+        if (relay != null && relay.isOnline()) {
+            relay.sendPluginMessage(this, CHANNEL, data);
         } else {
-            // 无人在线，缓存消息等待玩家加入时补发
-            pendingBindResults.add(msg);
-            getLogger().info("无在线玩家，BIND_RESULT 已缓存待玩家加入时补发");
-        }
-    }
-
-    /**
-     * 补发缓存中的绑定结果（玩家加入时调用）
-     */
-    public void flushBindResults(Player player) {
-        String msg;
-        while ((msg = pendingBindResults.poll()) != null) {
-            byte[] data = msg.getBytes(StandardCharsets.UTF_8);
-            player.sendPluginMessage(this, CHANNEL, data);
-            getLogger().info("补发缓存 BIND_RESULT: " + msg);
+            // relay 不可用时降级为查找任意在线玩家
+            Player anyPlayer = null;
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                anyPlayer = p;
+                break;
+            }
+            if (anyPlayer != null) {
+                anyPlayer.sendPluginMessage(this, CHANNEL, data);
+            } else {
+                getLogger().warning("无在线玩家，无法回报绑定结果到 Velocity");
+            }
         }
     }
 
