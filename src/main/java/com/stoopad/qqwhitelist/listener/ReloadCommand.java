@@ -190,7 +190,7 @@ public class ReloadCommand implements CommandExecutor {
 
     private boolean handleRedisBind(CommandSender sender, String[] args) {
         if (args.length < 3) {
-            plugin.getLogger().info("§c[绑定] 参数不足，用法: huhostdwhitelist bind_redis <验证码> <openId>");
+            plugin.getLogger().info(plugin.getMessageWithPrefix("usage"));
             return true;
         }
 
@@ -200,33 +200,36 @@ public class ReloadCommand implements CommandExecutor {
         // 验证码校验
         String playerName = plugin.getCodeManager().consumeCode(code);
         if (playerName == null) {
-            plugin.getLogger().info("§c[绑定] 验证码无效或已过期");
+            plugin.getLogger().info(plugin.getMessageWithPrefix("invalid-code"));
             return true;
         }
 
         // 检查绑定上限
         if (!plugin.getBindManager().canBind(openId)) {
-            plugin.getLogger().info("§c[绑定] 绑定失败：已达上限（最多" + plugin.getBindManager().getMaxAccountsPerQQ() + "个账号）");
+            plugin.getLogger().info(plugin.getMessageWithPrefix("bind-limit")
+                    .replace("{max}", String.valueOf(plugin.getBindManager().getMaxAccountsPerQQ())));
             return true;
         }
 
         // 检查是否已绑定
         if (plugin.getBindManager().isBound(playerName)) {
-            plugin.getLogger().info("§e[绑定] " + playerName + " 已绑定其他QQ，跳过");
+            plugin.getLogger().info(plugin.getMessageWithPrefix("already-bound")
+                    .replace("{player}", playerName));
             return true;
         }
 
         // 执行绑定
         boolean success = plugin.getBindManager().bind(playerName, openId);
         if (!success) {
-            plugin.getLogger().info("§c[绑定] 绑定失败，请重试");
+            plugin.getLogger().info(plugin.getMessageWithPrefix("bind-fail"));
             return true;
         }
 
         // 加白名单
         OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
         offline.setWhitelisted(true);
-        plugin.getLogger().info("§a[绑定] " + playerName + " 绑定成功，已加白名单");
+        plugin.getLogger().info(plugin.getMessageWithPrefix("success")
+                .replace("{player}", playerName));
 
         // 如果玩家在线且处于倒计时中，取消倒计时放行
         Player target = Bukkit.getPlayer(playerName);

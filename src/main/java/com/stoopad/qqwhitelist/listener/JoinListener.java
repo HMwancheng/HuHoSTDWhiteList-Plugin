@@ -57,7 +57,7 @@ public class JoinListener implements Listener {
         // 未绑定 → 生成验证码并拒绝
         String code = plugin.getCodeManager().generateCode(name);
         String cmd = plugin.getBindCommand();
-        String message = plugin.getConfig().getString("prelogin-kick-message",
+        String message = plugin.getConfig().getString("kick-message",
                 "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /" + cmd + " {code}")
                 .replace("{cmd}", cmd).replace("{code}", code);
         event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, Component.text(message));

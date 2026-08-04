@@ -3,8 +3,22 @@
 # QQ群绑定命令名（玩家在QQ群发送的命令）
 bind-command: "验证码"
 
-# 是否要求本地安装 HuHoBot（false=仅通过 Velocity 插件消息通道接收绑定）
-require-huhobot: false
+# 通信模式（三选一）：
+#   huhobot   = 本地安装 HuHoBot Spigot 版，通过 BotCustomCommand 事件通信
+#   rcadapter = 使用 GroupRCAdapter（插件文件: RCHuHoBot-x.x.x-Spigot.jar），通过 Redis 控制台命令通信
+#               启动日志示例:
+#                 [RCSpigotAdapter] Enabling RCSpigotAdapter v1.0.0
+#                 [RCSpigotAdapter] Successfully connected to Redis at 127.0.0.1:6379
+#                 [RCSpigotAdapter] Subscribed to Redis channel: HuHoBotChannel
+#               status 命令日志示例:
+#                 === HuHoBot Status ===
+#                 Server Name: survival
+#                 Redis Status: Connected
+#                 Subscriber Status: Running
+#                 Command Channel: HuHoBotChannel
+#                 Callback Channel: HuHoBotChannel_callback
+#   velocity  = 使用 HuHoSTDWhiteList-Velocity 配套插件，通过 PluginMessage 通道通信
+require: rcadapter
 
 # === 验证模式 ===
 # "countdown" = 玩家进服后倒计时，期间可绑定，超时踢出
@@ -19,9 +33,6 @@ countdown-freeze: true
 
 # 倒计时 BossBar 提示（{time}=剩余秒数, {code}=验证码, {cmd}=绑定命令）
 countdown-bar: "§e请在QQ群 @HuHoBot /{cmd} {code}  §c{time}秒后踢出"
-
-# pre-login 模式踢出提示（{code}=验证码, {cmd}=绑定命令）
-prelogin-kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /{cmd} {code}"
 
 # === 白名单绕过 ===
 # 名单绕过开关（支持通配符 * 和 ?）
@@ -46,7 +57,7 @@ code-length: 6
 # 验证码有效期（秒）
 code-expiry-seconds: 300
 
-# 踢出提示消息（倒计时结束 / prelogin 模式使用）
+# 踢出提示消息（倒计时结束 / prelogin 模式通用）
 # {code} = 验证码，{cmd} = 绑定命令名
 kick-message: "§c你尚未绑定QQ！§e请在QQ群 @HuHoBot /{cmd} {code}"
 
@@ -60,7 +71,11 @@ rebind-days: 30
 rebind-kick-message: "§c绑定已过期！§e请在QQ群 @HuHoBot /{cmd} {code} 重新绑定"
 
 # 回报消息（{player}=用户名, {max}=绑定上限）
+# 注意：QQ群不支持 § 颜色代码，请使用纯文本
+# prefix 是所有消息的共同前缀，设为空字符串 "" 可去掉前缀
 messages:
+  # 消息前缀（HuHoBot 会自动添加 §c[绑定] 前缀，此处可自定义后续文字）
+  prefix: ""
   # 无参数时提示
   usage: "用法: /验证码 <验证码>"
   # 验证码不存在或已过期
@@ -71,3 +86,5 @@ messages:
   already-bound: "{player} 已绑定"
   # 绑定成功
   success: "{player} 绑定成功，已加白名单"
+  # 绑定失败（通用）
+  bind-fail: "绑定失败，请重试"

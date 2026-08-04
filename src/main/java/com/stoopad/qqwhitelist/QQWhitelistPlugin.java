@@ -38,28 +38,35 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         codeManager = new CodeManager(this);
         bindManager = new BindManager(this);
 
-        // 检查是否需要本地 HuHoBot
-        boolean requireHuHoBot = getConfig().getBoolean("require-huhobot", true);
-        if (requireHuHoBot) {
-            Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
-            if (huhoBot == null) {
-                getLogger().severe("HuHoBot 未安装！禁用 HuHoSTDWhiteList");
-                getServer().getPluginManager().disablePlugin(this);
-                return;
-            }
-
-            try {
-                Class.forName("cn.huohuas001.huhobot.spigot.api.BotCustomCommand");
-            } catch (ClassNotFoundException e) {
-                getLogger().severe("HuHoBot API 加载失败: " + e.getMessage());
-                getServer().getPluginManager().disablePlugin(this);
-                return;
-            }
-
-            // 注册 HuHoBot 本地命令监听
-            getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
-        } else {
-            getLogger().info("HuHoBot 本地检测已跳过，仅通过 Velocity 插件消息通道接收绑定");
+        // 根据通信模式决定是否注册本地 HuHoBot 监听
+        String requireMode = getConfig().getString("require", "huhobot").toLowerCase();
+        switch (requireMode) {
+            case "huhobot":
+                Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
+                if (huhoBot == null) {
+                    getLogger().severe("require 设为 huhobot 但 HuHoBot 未安装！禁用 HuHoSTDWhiteList");
+                    getServer().getPluginManager().disablePlugin(this);
+                    return;
+                }
+                try {
+                    Class.forName("cn.huohuas001.huhobot.spigot.api.BotCustomCommand");
+                } catch (ClassNotFoundException e) {
+                    getLogger().severe("HuHoBot API 加载失败: " + e.getMessage());
+                    getServer().getPluginManager().disablePlugin(this);
+                    return;
+                }
+                getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
+                getLogger().info("通信模式: HuHoBot 本地事件");
+                break;
+            case "rcadapter":
+                getLogger().info("通信模式: GroupRCAdapter (Redis 控制台命令)");
+                break;
+            case "velocity":
+                getLogger().info("通信模式: Velocity PluginMessage 通道");
+                break;
+            default:
+                getLogger().warning("未知的 require 模式: " + requireMode + "，使用默认 huhobot 模式");
+                getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
         }
 
         // 注册事件
@@ -109,21 +116,21 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         String playerName = codeManager.consumeCode(code);
         if (playerName == null) {
             getLogger().warning("Velocity 绑定: 验证码无效或已过期 " + code);
-            sendBindResult(code, "error", getMessage("invalid-code"), relay);
+            sendBindResult(code, "error", getMessageWithPrefix("invalid-code"), relay);
             return;
         }
 
         // 检查绑定上限
         if (!bindManager.canBind(openId)) {
             getLogger().warning("Velocity 绑定失败: " + openId + " 已达上限");
-            sendBindResult(code, "error", getMessage("bind-limit")
+            sendBindResult(code, "error", getMessageWithPrefix("bind-limit")
                     .replace("{max}", String.valueOf(bindManager.getMaxAccountsPerQQ())), relay);
             return;
         }
 
         if (bindManager.isBound(playerName)) {
             getLogger().info("Velocity 绑定: " + playerName + " 已绑定，跳过");
-            sendBindResult(code, "success", getMessage("already-bound")
+            sendBindResult(code, "success", getMessageWithPrefix("already-bound")
                     .replace("{player}", playerName), relay);
             return;
         }
@@ -131,7 +138,7 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         boolean success = bindManager.bind(playerName, openId);
         if (!success) {
             getLogger().warning("Velocity 绑定失败: " + playerName + " -> " + openId);
-            sendBindResult(code, "error", getMessage("already-bound")
+            sendBindResult(code, "error", getMessageWithPrefix("already-bound")
                     .replace("{player}", playerName), relay);
             return;
         }
@@ -145,7 +152,7 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         });
 
         // 回报 HuHoBot-Velocity → QQ群消息
-        sendBindResult(code, "success", getMessage("success")
+        sendBindResult(code, "success", getMessageWithPrefix("success")
                 .replace("{player}", playerName), relay);
 
         // 如果玩家在线且处于倒计时中，取消倒计时放行
@@ -213,10 +220,20 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
     }
 
     /**
-     * 获取回报消息
+     * 获取回报消息（不含前缀，仅消息文本）
      */
     public String getMessage(String key) {
         return getConfig().getString("messages." + key, key);
+    }
+
+    /**
+     * 获取带前缀的回报消息（用于 QQ 群回报）
+     */
+    public String getMessageWithPrefix(String key) {
+        String prefix = getConfig().getString("messages.prefix", "");
+        String msg = getMessage(key);
+        if (prefix.isEmpty()) return msg;
+        return prefix + " " + msg;
     }
 
     public static QQWhitelistPlugin getInstance() { return instance; }

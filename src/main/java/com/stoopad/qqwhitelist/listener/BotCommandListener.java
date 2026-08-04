@@ -39,7 +39,7 @@ public class BotCommandListener implements Listener {
 
         // 无参数
         if (params.isEmpty()) {
-            event.respone(plugin.getMessage("usage"), "success");
+            event.respone(plugin.getMessageWithPrefix("usage"), "success");
             return;
         }
 
@@ -47,7 +47,7 @@ public class BotCommandListener implements Listener {
 
         // 检查QQ绑定数量
         if (!plugin.getBindManager().canBind(openId)) {
-            event.respone(plugin.getMessage("bind-limit")
+            event.respone(plugin.getMessageWithPrefix("bind-limit")
                     .replace("{max}", String.valueOf(plugin.getBindManager().getMaxAccountsPerQQ())), "success");
             return;
         }
@@ -55,13 +55,13 @@ public class BotCommandListener implements Listener {
         // 验证码校验
         String playerName = plugin.getCodeManager().consumeCode(code);
         if (playerName == null) {
-            event.respone(plugin.getMessage("invalid-code"), "success");
+            event.respone(plugin.getMessageWithPrefix("invalid-code"), "success");
             return;
         }
 
         // 检查玩家是否已绑定
         if (plugin.getBindManager().isBound(playerName)) {
-            event.respone(plugin.getMessage("already-bound")
+            event.respone(plugin.getMessageWithPrefix("already-bound")
                     .replace("{player}", playerName), "success");
             return;
         }
@@ -69,7 +69,7 @@ public class BotCommandListener implements Listener {
         // 执行绑定
         boolean success = plugin.getBindManager().bind(playerName, openId);
         if (!success) {
-            event.respone(plugin.getMessage("already-bound")
+            event.respone(plugin.getMessageWithPrefix("already-bound")
                     .replace("{player}", playerName), "success");
             return;
         }
@@ -82,7 +82,7 @@ public class BotCommandListener implements Listener {
         });
 
         // 回报成功
-        event.respone(plugin.getMessage("success")
+        event.respone(plugin.getMessageWithPrefix("success")
                 .replace("{player}", playerName), "success");
     }
 }
