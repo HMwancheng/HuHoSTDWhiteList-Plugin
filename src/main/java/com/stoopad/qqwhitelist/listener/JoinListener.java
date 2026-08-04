@@ -82,10 +82,6 @@ public class JoinListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         String mode = plugin.getConfig().getString("verify-mode", "countdown");
-
-        // 补发缓存中的绑定结果回报
-        plugin.flushBindResults(event.getPlayer());
-
         if (!"countdown".equalsIgnoreCase(mode)) return;
 
         Player player = event.getPlayer();
