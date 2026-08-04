@@ -36,6 +36,8 @@ public class ReloadCommand implements CommandExecutor {
                 return handleWhitelist(sender, args);
             case "velocitybind":
                 return handleVelocityBind(sender, args);
+            case "bind_redis":
+                return handleRedisBind(sender, args);
             default:
                 sendUsage(sender);
                 return true;
@@ -174,6 +176,57 @@ public class ReloadCommand implements CommandExecutor {
         OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
         offline.setWhitelisted(true);
         plugin.getLogger().info("Velocity bind: " + playerName + " <-> " + openId + " 已加白名单");
+
+        // 如果玩家在线且处于倒计时中，取消倒计时放行
+        Player target = Bukkit.getPlayer(playerName);
+        if (target != null && target.isOnline() && plugin.getJoinListener().isInCountdown(target.getUniqueId())) {
+            Bukkit.getScheduler().runTask(plugin, () -> plugin.getJoinListener().cancelCountdown(target));
+        }
+
+        return true;
+    }
+
+    // ==================== bind_redis (Redis 远程绑定) ====================
+
+    private boolean handleRedisBind(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            plugin.getLogger().info("§c[绑定] 参数不足，用法: huhostdwhitelist bind_redis <验证码> <openId>");
+            return true;
+        }
+
+        String code = args[1];
+        String openId = args[2];
+
+        // 验证码校验
+        String playerName = plugin.getCodeManager().consumeCode(code);
+        if (playerName == null) {
+            plugin.getLogger().info("§c[绑定] 验证码无效或已过期");
+            return true;
+        }
+
+        // 检查绑定上限
+        if (!plugin.getBindManager().canBind(openId)) {
+            plugin.getLogger().info("§c[绑定] 绑定失败：已达上限（最多" + plugin.getBindManager().getMaxAccountsPerQQ() + "个账号）");
+            return true;
+        }
+
+        // 检查是否已绑定
+        if (plugin.getBindManager().isBound(playerName)) {
+            plugin.getLogger().info("§e[绑定] " + playerName + " 已绑定其他QQ，跳过");
+            return true;
+        }
+
+        // 执行绑定
+        boolean success = plugin.getBindManager().bind(playerName, openId);
+        if (!success) {
+            plugin.getLogger().info("§c[绑定] 绑定失败，请重试");
+            return true;
+        }
+
+        // 加白名单
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(playerName);
+        offline.setWhitelisted(true);
+        plugin.getLogger().info("§a[绑定] " + playerName + " 绑定成功，已加白名单");
 
         // 如果玩家在线且处于倒计时中，取消倒计时放行
         Player target = Bukkit.getPlayer(playerName);
