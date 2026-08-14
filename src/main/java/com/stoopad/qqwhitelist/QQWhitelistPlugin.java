@@ -44,7 +44,10 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
             case "huhobot":
                 Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
                 if (huhoBot == null) {
-                    getLogger().severe("require 设为 huhobot 但 HuHoBot 未安装！禁用 HuHoSTDWhiteList");
+                    huhoBot = getServer().getPluginManager().getPlugin("HuHoBotPenguin");
+                }
+                if (huhoBot == null) {
+                    getLogger().severe("require 设为 huhobot 但 HuHoBot/HuHoBotPenguin 均未安装！禁用 HuHoSTDWhiteList");
                     getServer().getPluginManager().disablePlugin(this);
                     return;
                 }
@@ -56,7 +59,7 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
                     return;
                 }
                 getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
-                getLogger().info("通信模式: HuHoBot 本地事件");
+                getLogger().info("通信模式: HuHoBot 本地事件 (" + huhoBot.getName() + ")");
                 break;
             case "rcadapter":
                 getLogger().info("通信模式: GroupRCAdapter (Redis 控制台命令)");
