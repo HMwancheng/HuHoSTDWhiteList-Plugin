@@ -43,23 +43,32 @@ public final class QQWhitelistPlugin extends JavaPlugin implements PluginMessage
         switch (requireMode) {
             case "huhobot":
                 Plugin huhoBot = getServer().getPluginManager().getPlugin("HuHoBot");
-                if (huhoBot == null) {
-                    huhoBot = getServer().getPluginManager().getPlugin("HuHoBotPenguin");
+                if (huhoBot != null) {
+                    // 原版 HuHoBot → 使用 BotCustomCommand 事件监听
+                    try {
+                        Class.forName("cn.huohuas001.huhobot.spigot.api.BotCustomCommand");
+                    } catch (ClassNotFoundException e) {
+                        getLogger().severe("HuHoBot API 加载失败: " + e.getMessage());
+                        getServer().getPluginManager().disablePlugin(this);
+                        return;
+                    }
+                    getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
+                    getLogger().info("通信模式: HuHoBot 本地事件");
+                } else {
+                    // 尝试 HuHoBotPenguin → 使用控制台命令模式（同 rcadapter）
+                    Plugin penguin = getServer().getPluginManager().getPlugin("HuHoBotPenguin");
+                    if (penguin != null) {
+                        getLogger().info("通信模式: HuHoBotPenguin (控制台命令)");
+                        getLogger().info("请在 HuHoBotPenguin 的 custom-commands 中配置:");
+                        getLogger().info("  key: " + bindCommand);
+                        getLogger().info("  command: huhostdwhitelist bind_redis {params} {user}");
+                        getLogger().info("  permission: 0");
+                    } else {
+                        getLogger().severe("require 设为 huhobot 但 HuHoBot/HuHoBotPenguin 均未安装！禁用 HuHoSTDWhiteList");
+                        getServer().getPluginManager().disablePlugin(this);
+                        return;
+                    }
                 }
-                if (huhoBot == null) {
-                    getLogger().severe("require 设为 huhobot 但 HuHoBot/HuHoBotPenguin 均未安装！禁用 HuHoSTDWhiteList");
-                    getServer().getPluginManager().disablePlugin(this);
-                    return;
-                }
-                try {
-                    Class.forName("cn.huohuas001.huhobot.spigot.api.BotCustomCommand");
-                } catch (ClassNotFoundException e) {
-                    getLogger().severe("HuHoBot API 加载失败: " + e.getMessage());
-                    getServer().getPluginManager().disablePlugin(this);
-                    return;
-                }
-                getServer().getPluginManager().registerEvents(new BotCommandListener(this), this);
-                getLogger().info("通信模式: HuHoBot 本地事件 (" + huhoBot.getName() + ")");
                 break;
             case "rcadapter":
                 getLogger().info("通信模式: GroupRCAdapter (Redis 控制台命令)");

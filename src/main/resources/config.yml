@@ -4,7 +4,12 @@
 bind-command: "验证码"
 
 # 通信模式（三选一）：
-#   huhobot   = 本地安装 HuHoBot 或 HuHoBotPenguin Spigot 版，通过 BotCustomCommand 事件通信
+#   huhobot   = 本地安装 HuHoBot 或 HuHoBotPenguin（插件文件: HuHoBot-Penguin_Spigot-x.x.x.jar）
+#               原版 HuHoBot → 通过 BotCustomCommand 事件通信
+#               HuHoBotPenguin → 通过控制台命令通信，需在 HuHoBotPenguin 的 custom-commands 中配置:
+#                 key: 验证码
+#                 command: huhostdwhitelist bind_redis {params} {user}
+#                 permission: 0
 #   rcadapter = 使用 GroupRCAdapter（插件文件: RCHuHoBot-x.x.x-Spigot.jar），通过 Redis 控制台命令通信
 #               启动日志示例:
 #                 [RCSpigotAdapter] Enabling RCSpigotAdapter v1.0.0
