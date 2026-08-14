@@ -25,7 +25,7 @@ jobs:
 
       - name: Build HuHoBot stub
         run: |
-          PAPER_API=$(find ~/.gradle -path "*/paper-api-*.jar" ! -name "*-sources*" ! -name "*-javadoc*" | head -1)
+          PAPER_API=$(gradle -q resolvePaperApi)
           echo "Paper API: $PAPER_API"
           curl -sL -o fastjson2.jar https://repo1.maven.org/maven2/com/alibaba/fastjson2/fastjson2/2.0.53/fastjson2-2.0.53.jar
           mkdir -p libs stub_out

@@ -30,3 +30,14 @@ tasks.withType(JavaCompile) {
 jar {
     archiveFileName = 'HuHoSTDWhiteList.jar'
 }
+
+task resolvePaperApi {
+    doLast {
+        def jar = configurations.compileClasspath.files.find { it.name.startsWith('paper-api') }
+        if (jar != null) {
+            println jar.absolutePath
+        } else {
+            throw new GradleException('paper-api jar not found in compileClasspath')
+        }
+    }
+}
