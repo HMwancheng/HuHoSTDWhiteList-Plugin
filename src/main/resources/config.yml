@@ -39,6 +39,31 @@ countdown-freeze: true
 # 倒计时 BossBar 提示（{time}=剩余秒数, {code}=验证码, {cmd}=绑定命令）
 countdown-bar: "§e请在QQ群 @HuHoBot /{cmd} {code}  §c{time}秒后踢出"
 
+# === 未验证玩家限制（countdown 模式生效）===
+# 是否限制未验证玩家使用命令（只允许 allowed-commands 内的命令）
+restrict-commands-enabled: true
+
+# 允许未验证玩家使用的命令（前缀匹配，包含斜杠，可自由增减）
+# 例：/login 密码 xxx 会被放行；/tpa 会被拦截
+allowed-commands:
+  - "/login"
+  - "/l"
+  - "/register"
+  - "/reg"
+  - "/bindcode"
+
+# 使用被限制命令时的提示
+restrict-command-message: "§c未完成QQ验证前无法使用该命令！"
+
+# 是否限制未验证玩家的移动范围（离开出生点超过半径会被拉回）
+restrict-move-enabled: false
+
+# 允许移动的半径（方块），以进服位置为圆心
+restrict-move-radius: 5.0
+
+# 超出移动范围时的提示
+restrict-move-message: "§c未完成验证前无法离开该区域！"
+
 # === 白名单绕过 ===
 # 名单绕过开关（支持通配符 * 和 ?）
 bypass-names-enabled: false

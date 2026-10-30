@@ -4,14 +4,19 @@ import com.stoopad.qqwhitelist.QQWhitelistPlugin;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
@@ -25,6 +30,10 @@ public class JoinListener implements Listener {
     private final QQWhitelistPlugin plugin;
     private final Map<UUID, BossBar> activeBossBars = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitRunnable> countdownTasks = new ConcurrentHashMap<>();
+    /** 未验证玩家的活动锚点（出生位置），用于移动范围限制 */
+    private final Map<UUID, Location> anchors = new ConcurrentHashMap<>();
+    /** 移动范围提示消息节流 */
+    private final Map<UUID, Long> lastRestrictNotice = new ConcurrentHashMap<>();
 
     public JoinListener(QQWhitelistPlugin plugin) {
         this.plugin = plugin;
@@ -131,6 +140,7 @@ public class JoinListener implements Listener {
                 BossBar.Color.RED, BossBar.Overlay.PROGRESS);
         player.showBossBar(bar);
         activeBossBars.put(player.getUniqueId(), bar);
+        anchors.put(player.getUniqueId(), player.getLocation().clone());
 
         if (freeze) {
             player.setWalkSpeed(0);
@@ -182,6 +192,8 @@ public class JoinListener implements Listener {
         BossBar bar = activeBossBars.remove(uuid);
         if (bar != null) player.hideBossBar(bar);
         countdownTasks.remove(uuid);
+        anchors.remove(uuid);
+        lastRestrictNotice.remove(uuid);
 
         // 恢复移动速度
         if (player.isOnline()) {
@@ -210,6 +222,92 @@ public class JoinListener implements Listener {
         return countdownTasks.containsKey(uuid);
     }
 
+    // ==================== 未验证玩家限制 ====================
+
+    /**
+     * 未验证玩家只能使用 allowed-commands 中的命令（如登陆、注册）
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onCommandPreprocess(PlayerCommandPreprocessEvent event) {
+        if (!plugin.getConfig().getBoolean("restrict-commands-enabled", true)) return;
+
+        Player player = event.getPlayer();
+        if (!countdownTasks.containsKey(player.getUniqueId())) return;
+        if (isBypassed(player)) return;
+
+        String message = event.getMessage().trim().toLowerCase();
+        for (String allowed : plugin.getConfig().getStringList("allowed-commands")) {
+            String cmd = allowed.trim().toLowerCase();
+            if (cmd.isEmpty()) continue;
+            if (!cmd.startsWith("/")) cmd = "/" + cmd;
+            // 精确匹配命令，或命令后跟参数
+            if (message.equals(cmd) || message.startsWith(cmd + " ")) return;
+        }
+
+        event.setCancelled(true);
+        player.sendMessage(LegacyComponentSerializer.legacySection().deserialize(
+                plugin.getConfig().getString("restrict-command-message", "§c未完成验证前无法使用该命令！")));
+    }
+
+    /**
+     * 未验证玩家不能离开出生点 restrict-move-radius 格范围
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        if (!plugin.getConfig().getBoolean("restrict-move-enabled", false)) return;
+        // PlayerTeleportEvent 是 PlayerMoveEvent 的子类，交由 onPlayerTeleport 处理
+        if (event instanceof PlayerTeleportEvent) return;
+
+        Player player = event.getPlayer();
+        Location anchor = anchors.get(player.getUniqueId());
+        if (anchor == null) return;
+
+        Location to = event.getTo();
+        if (to == null || to.getWorld() == null || !to.getWorld().equals(anchor.getWorld())) {
+            event.setTo(anchor);
+            noticeMoveRestrict(player);
+            return;
+        }
+
+        double radius = plugin.getConfig().getDouble("restrict-move-radius", 5.0);
+        if (anchor.distanceSquared(to) > radius * radius) {
+            event.setTo(anchor);
+            noticeMoveRestrict(player);
+        }
+    }
+
+    /**
+     * 未验证玩家禁止使用末影珍珠/紫颂果等传送手段逃逸
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        if (!plugin.getConfig().getBoolean("restrict-move-enabled", false)) return;
+
+        PlayerTeleportEvent.TeleportCause cause = event.getCause();
+        if (cause == PlayerTeleportEvent.TeleportCause.PLUGIN
+                || cause == PlayerTeleportEvent.TeleportCause.UNKNOWN) return;
+
+        Location anchor = anchors.get(event.getPlayer().getUniqueId());
+        if (anchor == null) return;
+
+        Location to = event.getTo();
+        double radius = plugin.getConfig().getDouble("restrict-move-radius", 5.0);
+        if (to == null || to.getWorld() == null || !to.getWorld().equals(anchor.getWorld())
+                || anchor.distanceSquared(to) > radius * radius) {
+            event.setCancelled(true);
+            noticeMoveRestrict(event.getPlayer());
+        }
+    }
+
+    private void noticeMoveRestrict(Player player) {
+        long now = System.currentTimeMillis();
+        Long last = lastRestrictNotice.get(player.getUniqueId());
+        if (last != null && now - last < 1000L) return;
+        lastRestrictNotice.put(player.getUniqueId(), now);
+        player.sendMessage(LegacyComponentSerializer.legacySection().deserialize(
+                plugin.getConfig().getString("restrict-move-message", "§c未完成验证前无法离开该区域！")));
+    }
+
     // ==================== 玩家退出 ====================
 
     @EventHandler
@@ -219,6 +317,8 @@ public class JoinListener implements Listener {
         if (bar != null) player.hideBossBar(bar);
         BukkitRunnable task = countdownTasks.remove(player.getUniqueId());
         if (task != null) task.cancel();
+        anchors.remove(player.getUniqueId());
+        lastRestrictNotice.remove(player.getUniqueId());
     }
 
     // ==================== 绕过检查 ====================
